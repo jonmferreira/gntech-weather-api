@@ -1,11 +1,31 @@
+import logging
 from contextlib import asynccontextmanager
+
+from apscheduler.schedulers.background import BackgroundScheduler
 from fastapi import FastAPI
+
 from app.config import settings
+from app.services.fetcher import fetch_all_cities
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)-8s %(name)s — %(message)s",
+)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    scheduler = BackgroundScheduler()
+    scheduler.add_job(
+        fetch_all_cities,
+        "interval",
+        minutes=settings.fetch_interval_minutes,
+        id="weather_fetch",
+    )
+    scheduler.start()
+    fetch_all_cities()  # coleta imediata na inicialização
     yield
+    scheduler.shutdown(wait=False)
 
 
 def create_app() -> FastAPI:
