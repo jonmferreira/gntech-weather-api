@@ -192,7 +192,7 @@ Pipeline CI/CD em `.github/workflows/ci.yml`:
 
 ```mermaid
 flowchart TD
-    PR([Push / Pull Request]) --> L[lint\nruff check app/]
+    PR([Pull Request → main]) --> L[lint\nruff check app/]
     PR --> T[typecheck\nmypy app/]
     PR --> TS[testes\npytest tests/ -v]
     PR --> DB[docker build]
