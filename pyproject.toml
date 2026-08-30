@@ -1,0 +1,9 @@
+[tool.ruff.lint]
+ignore = [
+    "B008",   # Query/Depends em defaults é o padrão do FastAPI
+    "BLE001", # catch Exception é intencional nos fetchers
+    "FLY002", # join de lista é mais legível que f-string aqui
+]
+
+[tool.mypy]
+ignore_missing_imports = true
