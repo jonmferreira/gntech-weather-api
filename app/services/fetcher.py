@@ -2,6 +2,7 @@ import logging
 from datetime import datetime, timezone
 
 import httpx
+import sqlalchemy.exc
 
 from app.config import settings
 from app.db import SessionLocal
@@ -86,7 +87,7 @@ def _fetch_city(city_country: str) -> None:
             reading.temp_celsius,
             reading.humidity_pct,
         )
-    except Exception as exc:
+    except sqlalchemy.exc.SQLAlchemyError as exc:
         db.rollback()
         source_status.mark_failure("openweather", str(exc))
         logger.error("Erro ao salvar leitura de '%s': %s", city, exc)

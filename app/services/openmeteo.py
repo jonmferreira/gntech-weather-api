@@ -2,6 +2,7 @@ import logging
 from datetime import datetime, timezone
 
 import httpx
+import sqlalchemy.exc
 
 from app.config import settings
 from app.db import SessionLocal
@@ -38,7 +39,7 @@ _WMO_DESCRIPTIONS: dict[int, str] = {
 
 
 def _fetch_coords(city_name: str, country: str, lat: float, lon: float) -> None:
-    params = {
+    params: dict[str, str | float] = {
         "latitude": lat,
         "longitude": lon,
         "current": ",".join([
@@ -105,7 +106,7 @@ def _fetch_coords(city_name: str, country: str, lat: float, lon: float) -> None:
             reading.temp_celsius,
             reading.humidity_pct,
         )
-    except Exception as exc:
+    except sqlalchemy.exc.SQLAlchemyError as exc:
         db.rollback()
         source_status.mark_failure("openmeteo", str(exc))
         logger.error("Erro ao salvar leitura Open-Meteo de '%s': %s", city_name, exc)

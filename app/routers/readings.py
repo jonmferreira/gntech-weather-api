@@ -1,8 +1,7 @@
 from datetime import datetime
-from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import Float, func
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.db import get_db
@@ -19,11 +18,11 @@ router = APIRouter(prefix="/readings", tags=["readings"])
     description="Retorna leituras armazenadas com filtros opcionais por cidade, período e fonte.",
 )
 def list_readings(
-    city: Optional[str] = Query(None, max_length=100, description="Nome da cidade (ex: Florianopolis)"),
-    from_dt: Optional[datetime] = Query(None, description="Data/hora inicial (UTC) — ex: 2026-08-01T00:00:00"),
-    to_dt: Optional[datetime] = Query(None, description="Data/hora final (UTC) — ex: 2026-08-31T23:59:59"),
+    city: str | None = Query(None, max_length=100, description="Nome da cidade (ex: Florianopolis)"),
+    from_dt: datetime | None = Query(None, description="Data/hora inicial (UTC) — ex: 2026-08-01T00:00:00"),
+    to_dt: datetime | None = Query(None, description="Data/hora final (UTC) — ex: 2026-08-31T23:59:59"),
     limit: int = Query(100, ge=1, le=500, description="Máximo de resultados (1–500)"),
-    source: Optional[List[str]] = Query(None, description="Fontes de dados (openweather, openmeteo). Sem filtro retorna todas."),
+    source: list[str] | None = Query(None, description="Fontes de dados (openweather, openmeteo). Sem filtro retorna todas."),
     db: Session = Depends(get_db),
 ):
     if from_dt and to_dt and from_dt > to_dt:
@@ -54,7 +53,7 @@ def list_readings(
     ),
 )
 def latest_readings(
-    city: Optional[str] = Query(None, max_length=100, description="Nome da cidade (ex: Florianopolis)"),
+    city: str | None = Query(None, max_length=100, description="Nome da cidade (ex: Florianopolis)"),
     db: Session = Depends(get_db),
 ):
     subq = (
@@ -91,10 +90,10 @@ def latest_readings(
                 "agrupadas por cidade. Suporta filtro por período e fonte.",
 )
 def stats(
-    city: Optional[str] = Query(None, max_length=100, description="Nome da cidade (ex: Florianopolis)"),
-    from_dt: Optional[datetime] = Query(None, description="Data/hora inicial (UTC)"),
-    to_dt: Optional[datetime] = Query(None, description="Data/hora final (UTC)"),
-    source: Optional[List[str]] = Query(None, description="Fontes de dados (openweather, openmeteo). Sem filtro retorna todas."),
+    city: str | None = Query(None, max_length=100, description="Nome da cidade (ex: Florianopolis)"),
+    from_dt: datetime | None = Query(None, description="Data/hora inicial (UTC)"),
+    to_dt: datetime | None = Query(None, description="Data/hora final (UTC)"),
+    source: list[str] | None = Query(None, description="Fontes de dados (openweather, openmeteo). Sem filtro retorna todas."),
     db: Session = Depends(get_db),
 ):
     if from_dt and to_dt and from_dt > to_dt:
