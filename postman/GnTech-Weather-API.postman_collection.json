@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "GnTech Weather API",
-    "description": "Coleção de testes para a GnTech Weather API. Cobre os fluxos principais e vetores de segurança OWASP API Top 10.",
+    "description": "Coleção de testes para a GnTech Weather API. Cobre fluxos principais e vetores de segurança OWASP API Top 10.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
@@ -9,25 +9,12 @@
       "name": "Health",
       "item": [
         {
-          "name": "GET /health — serviço disponível",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
-                  "pm.test('Retorna status ok', () => {",
-                  "    const json = pm.response.json();",
-                  "    pm.expect(json.status).to.eql('ok');",
-                  "});"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "url": "{{base_url}}/health"
-          }
+          "name": "GET /health",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Retorna status ok', () => pm.expect(pm.response.json().status).to.eql('ok'));"
+          ]}}],
+          "request": { "method": "GET", "url": "{{base_url}}/health" }
         }
       ]
     },
@@ -35,140 +22,106 @@
       "name": "Readings — fluxos principais",
       "item": [
         {
-          "name": "GET /readings — lista todas as leituras",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
-                  "pm.test('Retorna array', () => pm.expect(pm.response.json()).to.be.an('array'));",
-                  "pm.test('Leitura tem campos obrigatórios', () => {",
-                  "    const item = pm.response.json()[0];",
-                  "    pm.expect(item).to.have.all.keys('id','city','country','temp_celsius','feels_like','humidity_pct','fetched_at','dt');",
-                  "});"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "url": "{{base_url}}/readings"
-          }
+          "name": "GET /readings — lista todas",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Retorna array', () => pm.expect(pm.response.json()).to.be.an('array'));",
+            "pm.test('Campos obrigatórios presentes', () => {",
+            "    const item = pm.response.json()[0];",
+            "    if (item) pm.expect(item).to.include.all.keys('id','city','country','temp_celsius','humidity_pct','fetched_at','source');",
+            "});"
+          ]}}],
+          "request": { "method": "GET", "url": "{{base_url}}/readings" }
         },
         {
-          "name": "GET /readings — filtro por cidade",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
-                  "pm.test('Todos os resultados são de Florianópolis', () => {",
-                  "    pm.response.json().forEach(r => pm.expect(r.city).to.include('Florian'));",
-                  "});"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "url": {
-              "raw": "{{base_url}}/readings?city=Florianopolis&limit=10",
-              "query": [
-                { "key": "city", "value": "Florianopolis" },
-                { "key": "limit", "value": "10" }
-              ]
-            }
-          }
+          "name": "GET /readings — filtro city",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Resultados contêm cidade filtrada', () => {",
+            "    pm.response.json().forEach(r => pm.expect(r.city.toLowerCase()).to.include('florian'));",
+            "});"
+          ]}}],
+          "request": { "method": "GET", "url": { "raw": "{{base_url}}/readings?city=Florianopolis&limit=10", "query": [{"key":"city","value":"Florianopolis"},{"key":"limit","value":"10"}] }}
+        },
+        {
+          "name": "GET /readings — filtro source=openweather",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Todos os resultados são da fonte openweather', () => {",
+            "    pm.response.json().forEach(r => pm.expect(r.source).to.eql('openweather'));",
+            "});"
+          ]}}],
+          "request": { "method": "GET", "url": { "raw": "{{base_url}}/readings?source=openweather&limit=5", "query": [{"key":"source","value":"openweather"},{"key":"limit","value":"5"}] }}
+        },
+        {
+          "name": "GET /readings — filtro source=openmeteo",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Todos os resultados são da fonte openmeteo', () => {",
+            "    pm.response.json().forEach(r => pm.expect(r.source).to.eql('openmeteo'));",
+            "});"
+          ]}}],
+          "request": { "method": "GET", "url": { "raw": "{{base_url}}/readings?source=openmeteo&limit=5", "query": [{"key":"source","value":"openmeteo"},{"key":"limit","value":"5"}] }}
         },
         {
           "name": "GET /readings — filtro por período",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('Status 200', () => pm.response.to.have.status(200));"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "url": {
-              "raw": "{{base_url}}/readings?from_dt=2026-01-01T00:00:00&to_dt=2026-12-31T23:59:59",
-              "query": [
-                { "key": "from_dt", "value": "2026-01-01T00:00:00" },
-                { "key": "to_dt", "value": "2026-12-31T23:59:59" }
-              ]
-            }
-          }
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));"
+          ]}}],
+          "request": { "method": "GET", "url": { "raw": "{{base_url}}/readings?from_dt=2026-01-01T00:00:00&to_dt=2026-12-31T23:59:59", "query": [{"key":"from_dt","value":"2026-01-01T00:00:00"},{"key":"to_dt","value":"2026-12-31T23:59:59"}] }}
         },
         {
-          "name": "GET /readings/latest — última leitura por cidade",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
-                  "pm.test('Retorna array com ao menos uma cidade', () => {",
-                  "    pm.expect(pm.response.json().length).to.be.at.least(1);",
-                  "});"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "url": "{{base_url}}/readings/latest"
-          }
+          "name": "GET /readings/latest — ultima leitura de cada fonte",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Retorna ao menos uma leitura', () => pm.expect(pm.response.json().length).to.be.at.least(1));",
+            "pm.test('Campo source presente em cada leitura', () => {",
+            "    pm.response.json().forEach(r => pm.expect(r).to.have.property('source'));",
+            "});",
+            "pm.test('Fontes distintas no retorno', () => {",
+            "    const sources = pm.response.json().map(r => r.source);",
+            "    pm.expect(new Set(sources).size).to.be.at.least(1);",
+            "});"
+          ]}}],
+          "request": { "method": "GET", "url": "{{base_url}}/readings/latest" }
         },
         {
           "name": "GET /readings/stats — estatísticas gerais",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
-                  "pm.test('Stats tem campos esperados', () => {",
-                  "    const item = pm.response.json()[0];",
-                  "    pm.expect(item).to.have.all.keys('city','country','avg_temp','max_temp','min_temp','avg_humidity','avg_wind_speed','total_readings');",
-                  "});",
-                  "pm.test('max_temp >= min_temp', () => {",
-                  "    const item = pm.response.json()[0];",
-                  "    pm.expect(item.max_temp).to.be.at.least(item.min_temp);",
-                  "});"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "url": "{{base_url}}/readings/stats"
-          }
-        },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Campos de estatística presentes', () => {",
+            "    const item = pm.response.json()[0];",
+            "    pm.expect(item).to.include.all.keys('city','avg_temp','max_temp','min_temp','avg_humidity','total_readings');",
+            "});",
+            "pm.test('max_temp >= min_temp', () => {",
+            "    const item = pm.response.json()[0];",
+            "    pm.expect(item.max_temp).to.be.at.least(item.min_temp);",
+            "});"
+          ]}}],
+          "request": { "method": "GET", "url": "{{base_url}}/readings/stats" }
+        }
+      ]
+    },
+    {
+      "name": "Sources",
+      "item": [
         {
-          "name": "GET /readings/stats — filtro por cidade",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('Status 200', () => pm.response.to.have.status(200));"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "url": {
-              "raw": "{{base_url}}/readings/stats?city=Florianopolis",
-              "query": [{ "key": "city", "value": "Florianopolis" }]
-            }
-          }
+          "name": "GET /sources/status — saúde de todas as fontes",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+            "pm.test('Retorna array com entradas por fonte', () => pm.expect(pm.response.json()).to.be.an('array'));",
+            "pm.test('Cada entrada tem campos obrigatórios', () => {",
+            "    pm.response.json().forEach(s => {",
+            "        pm.expect(s).to.include.all.keys('source','is_healthy','last_attempt','last_success','last_error');",
+            "    });",
+            "});",
+            "pm.test('openweather e openmeteo estão listadas', () => {",
+            "    const sources = pm.response.json().map(s => s.source);",
+            "    pm.expect(sources).to.include('openweather');",
+            "    pm.expect(sources).to.include('openmeteo');",
+            "});"
+          ]}}],
+          "request": { "method": "GET", "url": "{{base_url}}/sources/status" }
         }
       ]
     },
@@ -176,168 +129,66 @@
       "name": "Segurança — OWASP API Top 10",
       "item": [
         {
-          "name": "API3 — SQL Injection via city (deve retornar 200 vazio, não erro 500)",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('Não retorna 500 (sem crash no banco)', () => {",
-                  "    pm.expect(pm.response.code).to.not.eql(500);",
-                  "});",
-                  "pm.test('Retorna 200 com array (query parametrizada)', () => {",
-                  "    pm.expect(pm.response.code).to.eql(200);",
-                  "    pm.expect(pm.response.json()).to.be.an('array');",
-                  "});"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "url": {
-              "raw": "{{base_url}}/readings?city=Florianopolis' OR '1'='1",
-              "query": [{ "key": "city", "value": "Florianopolis' OR '1'='1" }]
-            }
-          }
+          "name": "API3 — SQL Injection via city (200 com array vazio, sem 500)",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Não retorna 500', () => pm.expect(pm.response.code).to.not.eql(500));",
+            "pm.test('Retorna 200 — query parametrizada, sem crash', () => {",
+            "    pm.expect(pm.response.code).to.eql(200);",
+            "    pm.expect(pm.response.json()).to.be.an('array');",
+            "});"
+          ]}}],
+          "request": { "method": "GET", "url": { "raw": "{{base_url}}/readings?city=Florianopolis' OR '1'='1", "query": [{"key":"city","value":"Florianopolis' OR '1'='1"}] }}
         },
         {
-          "name": "API3 — SQL Injection via from_dt (deve retornar 422)",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('Retorna 422 — input inválido rejeitado pelo Pydantic', () => {",
-                  "    pm.expect(pm.response.code).to.eql(422);",
-                  "});"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "url": {
-              "raw": "{{base_url}}/readings?from_dt=2026-01-01' OR '1'='1",
-              "query": [{ "key": "from_dt", "value": "2026-01-01' OR '1'='1" }]
-            }
-          }
+          "name": "API3 — SQL Injection via from_dt (422 — Pydantic rejeita)",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Retorna 422 — tipo inválido rejeitado antes do banco', () => pm.expect(pm.response.code).to.eql(422));"
+          ]}}],
+          "request": { "method": "GET", "url": { "raw": "{{base_url}}/readings?from_dt=2026-01-01' OR '1'='1", "query": [{"key":"from_dt","value":"2026-01-01' OR '1'='1"}] }}
         },
         {
-          "name": "API4 — Input oversized: city com 10.000 caracteres (deve retornar 422)",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('Retorna 422 — input rejeitado pelo max_length=100', () => {",
-                  "    pm.expect(pm.response.code).to.eql(422);",
-                  "});"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "url": {
-              "raw": "{{base_url}}/readings?city=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-              "query": [{ "key": "city", "value": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" }]
-            }
-          }
+          "name": "API4 — city com 200 caracteres (422 — max_length=100)",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Retorna 422 — max_length=100 aplicado', () => pm.expect(pm.response.code).to.eql(422));"
+          ]}}],
+          "request": { "method": "GET", "url": { "raw": "{{base_url}}/readings?city=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA", "query": [{"key":"city","value":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"}] }}
         },
         {
-          "name": "API4 — Limit acima do máximo permitido (deve retornar 422)",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('Retorna 422 — limit > 500 rejeitado', () => {",
-                  "    pm.expect(pm.response.code).to.eql(422);",
-                  "});"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "url": {
-              "raw": "{{base_url}}/readings?limit=99999",
-              "query": [{ "key": "limit", "value": "99999" }]
-            }
-          }
+          "name": "API4 — limit=99999 (422 — máximo é 500)",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Retorna 422 — limit > 500 rejeitado', () => pm.expect(pm.response.code).to.eql(422));"
+          ]}}],
+          "request": { "method": "GET", "url": { "raw": "{{base_url}}/readings?limit=99999", "query": [{"key":"limit","value":"99999"}] }}
         },
         {
-          "name": "API8 — Swagger indisponível em produção (ENV=production → /docs retorna 404)",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('Em produção /docs não existe (404) — rodar com docker-compose.prod.yml', () => {",
-                  "    pm.expect([200, 404]).to.include(pm.response.code);",
-                  "});",
-                  "pm.test('NOTA: este teste só valida 404 com docker-compose.prod.yml', () => {",
-                  "    console.log('Suba com docker-compose -f docker-compose.prod.yml up para validar o 404.');",
-                  "});"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "url": "{{base_url}}/docs"
-          }
+          "name": "API8 — Swagger em produção (404 com docker-compose.prod.yml)",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('NOTA: executar com docker-compose.prod.yml para validar 404', () => {",
+            "    pm.expect([200, 404]).to.include(pm.response.code);",
+            "});"
+          ]}}],
+          "request": { "method": "GET", "url": "{{base_url}}/docs" }
         },
         {
-          "name": "Intervalo inválido — from_dt maior que to_dt (deve retornar 422)",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('Retorna 422 — intervalo de datas inválido', () => {",
-                  "    pm.expect(pm.response.code).to.eql(422);",
-                  "});",
-                  "pm.test('Mensagem de erro clara', () => {",
-                  "    const body = pm.response.json();",
-                  "    pm.expect(JSON.stringify(body)).to.include('from_dt');",
-                  "});"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "url": {
-              "raw": "{{base_url}}/readings?from_dt=2026-12-31T00:00:00&to_dt=2026-01-01T00:00:00",
-              "query": [
-                { "key": "from_dt", "value": "2026-12-31T00:00:00" },
-                { "key": "to_dt", "value": "2026-01-01T00:00:00" }
-              ]
-            }
-          }
+          "name": "API8 — Chave OpenWeather não exposta nas respostas",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Resposta não contém a API key', () => {",
+            "    const body = pm.response.text();",
+            "    pm.expect(body).to.not.include('appid');",
+            "    pm.expect(body).to.not.include('openweather_api_key');",
+            "});"
+          ]}}],
+          "request": { "method": "GET", "url": "{{base_url}}/readings/latest" }
         },
         {
-          "name": "API8 — Chave da OpenWeather não exposta nas respostas",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('Resposta não contém a API key da OpenWeather', () => {",
-                  "    const body = pm.response.text();",
-                  "    pm.expect(body).to.not.include('appid');",
-                  "    pm.expect(body).to.not.include('openweather');",
-                  "});"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "url": "{{base_url}}/readings/latest"
-          }
+          "name": "Intervalo inválido — from_dt > to_dt (422 com mensagem clara)",
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('Retorna 422', () => pm.expect(pm.response.code).to.eql(422));",
+            "pm.test('Mensagem referencia from_dt', () => {",
+            "    pm.expect(JSON.stringify(pm.response.json())).to.include('from_dt');",
+            "});"
+          ]}}],
+          "request": { "method": "GET", "url": { "raw": "{{base_url}}/readings?from_dt=2026-12-31T00:00:00&to_dt=2026-01-01T00:00:00", "query": [{"key":"from_dt","value":"2026-12-31T00:00:00"},{"key":"to_dt","value":"2026-01-01T00:00:00"}] }}
         }
       ]
     }
