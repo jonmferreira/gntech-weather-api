@@ -13,9 +13,6 @@ env/
 # Environment
 .env
 
-# Alembic
-alembic/versions/*.py
-
 # Pytest / mypy
 .pytest_cache/
 .mypy_cache/
