@@ -33,6 +33,14 @@ class SourceStatusOut(BaseModel):
     last_error: Optional[str] = Field(None, description="Mensagem do último erro, se houver")
 
 
+class SourceReadingOut(BaseModel):
+    source: str = Field(..., description="Nome da fonte de dados")
+    is_healthy: bool = Field(..., description="True se a última coleta foi bem-sucedida")
+    last_success: Optional[datetime] = Field(None, description="Última coleta bem-sucedida (UTC)")
+    error: Optional[str] = Field(None, description="Mensagem de erro da última tentativa, se houver")
+    data: Optional[WeatherReadingOut] = Field(None, description="Última leitura disponível, null se nunca houve coleta bem-sucedida")
+
+
 class CityStatsOut(BaseModel):
     city: str
     country: str

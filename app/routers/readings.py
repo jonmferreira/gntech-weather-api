@@ -7,7 +7,8 @@ from sqlalchemy.orm import Session
 
 from app.db import get_db
 from app.models import WeatherReading
-from app.schemas import CityStatsOut, WeatherReadingOut
+from app.schemas import CityStatsOut, SourceReadingOut, WeatherReadingOut
+from app.services import source_status as ss
 
 router = APIRouter(prefix="/readings", tags=["readings"])
 
@@ -83,6 +84,47 @@ def latest_readings(
         raise HTTPException(status_code=404, detail="Nenhuma leitura encontrada.")
 
     return results
+
+
+@router.get(
+    "/by-source",
+    response_model=list[SourceReadingOut],
+    summary="Última leitura de cada fonte com status",
+    description=(
+        "Retorna a leitura mais recente agrupada por fonte de dados. "
+        "Para cada fonte informa se está saudável, quando foi a última coleta bem-sucedida "
+        "e o erro mais recente caso tenha falhado. "
+        "Fontes com falha aparecem com `data: null` e `error` preenchido."
+    ),
+)
+def readings_by_source(
+    city: Optional[str] = Query(None, max_length=100, description="Nome da cidade (ex: Florianopolis)"),
+    db: Session = Depends(get_db),
+):
+    statuses = {s.source: s for s in ss.get_all()}
+
+    result = []
+    for source_name, status in statuses.items():
+        query = (
+            db.query(WeatherReading)
+            .filter(WeatherReading.source == source_name)
+        )
+        if city:
+            query = query.filter(WeatherReading.city.ilike(f"%{city}%"))
+
+        latest = query.order_by(WeatherReading.fetched_at.desc()).first()
+
+        result.append(
+            SourceReadingOut(
+                source=source_name,
+                is_healthy=status.is_healthy,
+                last_success=status.last_success,
+                error=status.last_error,
+                data=WeatherReadingOut.model_validate(latest) if latest else None,
+            )
+        )
+
+    return result
 
 
 @router.get(
