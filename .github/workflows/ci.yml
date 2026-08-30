@@ -32,7 +32,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       OPENWEATHER_API_KEY: test-key
-      DATABASE_URL: sqlite:///:memory:
+      DATABASE_URL: "sqlite:///:memory:"
       POSTGRES_USER: test
       POSTGRES_PASSWORD: test
       POSTGRES_DB: test
