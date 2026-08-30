@@ -172,16 +172,16 @@ Resultado dos testes executados via coleção Postman (`postman/GnTech-Weather-A
 
 | # | Vetor (OWASP API Top 10) | Status | Evidência |
 |---|---|---|---|
-| 1 | API3: SQL Injection via `city` | 🛡️ Blindado | `?city=Florianopolis' OR '1'='1` → 200 com array vazio; ORM parametrizado |
-| 2 | API3: SQL Injection via `from_dt` | 🛡️ Blindado | `?from_dt=2026-01-01' OR '1'='1` → 422; Pydantic rejeita antes de tocar no banco |
-| 3 | API4: Input oversized via `city` | 🛡️ Blindado | `?city=AAA...` (>100 chars) → 422; `max_length=100` via Pydantic |
-| 4 | API4: Consumo excessivo via `limit` | 🛡️ Blindado | `?limit=99999` → 422; limitado a `le=500` |
-| 5 | API8: Swagger em produção | 🛡️ Blindado | `GET /docs` com `docker-compose.prod.yml` → 404 |
-| 6 | API8: Chave de API exposta nas respostas | 🛡️ Blindado | Nenhuma resposta contém `appid`; chave em `.env`, nunca serializada |
-| 7 | API8: Credenciais no histórico Git | 🛡️ Blindado | `.env` no `.gitignore` desde o primeiro commit |
-| 8 | Intervalo de datas inválido | 🛡️ Blindado | `?from_dt=2026-12-31&to_dt=2026-01-01` → 422 com mensagem descritiva |
+| 1 | API3: SQL Injection via `city` | ✅ Mitigado | `?city=Florianopolis' OR '1'='1` → 200 com array vazio; ORM parametrizado |
+| 2 | API3: SQL Injection via `from_dt` | ✅ Mitigado | `?from_dt=2026-01-01' OR '1'='1` → 422; Pydantic rejeita antes de tocar no banco |
+| 3 | API4: Input oversized via `city` | ✅ Mitigado | `?city=AAA...` (>100 chars) → 422; `max_length=100` via Pydantic |
+| 4 | API4: Consumo excessivo via `limit` | ✅ Mitigado | `?limit=99999` → 422; limitado a `le=500` |
+| 5 | API8: Swagger em produção | ✅ Mitigado | `GET /docs` com `docker-compose.prod.yml` → 404 |
+| 6 | API8: Chave de API exposta nas respostas | ✅ Mitigado | Nenhuma resposta contém `appid`; chave em `.env`, nunca serializada |
+| 7 | API8: Credenciais no histórico Git | ✅ Mitigado | `.env` no `.gitignore` desde o primeiro commit |
+| 8 | Intervalo de datas inválido | ✅ Mitigado | `?from_dt=2026-12-31&to_dt=2026-01-01` → 422 com mensagem descritiva |
 
-**Legenda:** 🛡️ Blindado · ⚠️ Vulnerável · N/A Não aplicável
+**Legenda:** ✅ Mitigado · ⚠️ Vulnerável · N/A Não aplicável
 
 ## Testes
 
@@ -208,9 +208,9 @@ Django adicionaria complexidade desnecessária.
 
 ### Por que duas fontes?
 
-A vaga exige **integração entre sistemas**. OpenWeather e Open-Meteo demonstram na prática:
-autenticação por chave, integração com API pública sem auth, mapeamento de schemas distintos
-para um modelo único, e resiliência — a falha de uma fonte não afeta a outra.
+OpenWeather e Open-Meteo cobrem dois padrões distintos de integração: autenticação por chave
+e API pública sem auth. Schemas diferentes mapeados para um modelo único — a falha de uma
+fonte não afeta a outra.
 
 ### Por que INMET não foi integrado?
 
@@ -234,4 +234,4 @@ A API continua servindo os dados disponíveis. `GET /sources/status` expõe `is_
 ### Tabela plana sem normalização de cidade/país
 
 O enunciado pede uma tabela. Normalizar `city` e `country` introduziria JOINs sem benefício
-para o escopo. Decisão consciente documentada aqui.
+para o escopo.
