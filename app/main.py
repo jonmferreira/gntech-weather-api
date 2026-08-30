@@ -7,6 +7,7 @@ from fastapi import FastAPI
 from app.config import settings
 from app.routers.readings import router as readings_router
 from app.services.fetcher import fetch_all_cities
+from app.services.openmeteo import fetch_all_openmeteo
 
 logging.basicConfig(
     level=logging.INFO,
@@ -17,14 +18,19 @@ logging.basicConfig(
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     scheduler = BackgroundScheduler()
+    def fetch_all_sources() -> None:
+        fetch_all_cities()
+        fetch_all_openmeteo()
+
     scheduler.add_job(
-        fetch_all_cities,
+        fetch_all_sources,
         "interval",
         minutes=settings.fetch_interval_minutes,
         id="weather_fetch",
     )
     scheduler.start()
-    fetch_all_cities()  # coleta imediata na inicialização
+    fetch_all_cities()
+    fetch_all_openmeteo()
     yield
     scheduler.shutdown(wait=False)
 

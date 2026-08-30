@@ -60,6 +60,7 @@ def _fetch_city(city_country: str) -> None:
         icon=data["weather"][0]["icon"],
         dt=datetime.fromtimestamp(data["dt"], tz=timezone.utc),
         fetched_at=datetime.now(tz=timezone.utc),
+        source="openweather",
     )
 
     db = SessionLocal()

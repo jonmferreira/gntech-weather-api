@@ -23,3 +23,4 @@ class WeatherReading(Base):
     icon: Mapped[str] = mapped_column(String(20))
     dt: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     fetched_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    source: Mapped[str] = mapped_column(String(50), index=True, default="openweather")

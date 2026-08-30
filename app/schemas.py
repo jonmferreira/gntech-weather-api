@@ -19,6 +19,7 @@ class WeatherReadingOut(BaseModel):
     icon: str = Field(..., description="Código do ícone OpenWeather")
     dt: datetime = Field(..., description="Timestamp do dado na fonte (UTC)")
     fetched_at: datetime = Field(..., description="Timestamp da coleta pela aplicação (UTC)")
+    source: str = Field(..., description="Fonte dos dados: openweather | openmeteo")
 
     model_config = {"from_attributes": True}
 

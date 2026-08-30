@@ -8,6 +8,7 @@ class Settings(BaseSettings):
     postgres_password: str = "weather"
     postgres_db: str = "weather_db"
     cities: str = "Florianopolis,BR"
+    cities_coords: str = "-27.5954,-48.548"
     fetch_interval_minutes: int = 30
     env: str = "development"
 

@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional
+from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import Float, func
@@ -23,6 +23,7 @@ def list_readings(
     from_dt: Optional[datetime] = Query(None, description="Data/hora inicial (UTC) — ex: 2026-08-01T00:00:00"),
     to_dt: Optional[datetime] = Query(None, description="Data/hora final (UTC) — ex: 2026-08-31T23:59:59"),
     limit: int = Query(100, ge=1, le=500, description="Máximo de resultados (1–500)"),
+    source: Optional[List[str]] = Query(None, description="Fontes de dados (openweather, openmeteo). Sem filtro retorna todas."),
     db: Session = Depends(get_db),
 ):
     if from_dt and to_dt and from_dt > to_dt:
@@ -36,6 +37,8 @@ def list_readings(
         query = query.filter(WeatherReading.fetched_at >= from_dt)
     if to_dt:
         query = query.filter(WeatherReading.fetched_at <= to_dt)
+    if source:
+        query = query.filter(WeatherReading.source.in_(source))
 
     return query.order_by(WeatherReading.fetched_at.desc()).limit(limit).all()
 
@@ -49,25 +52,30 @@ def list_readings(
 )
 def latest_readings(
     city: Optional[str] = Query(None, max_length=100, description="Nome da cidade (ex: Florianopolis)"),
+    source: Optional[List[str]] = Query(None, description="Fontes de dados (openweather, openmeteo). Sem filtro retorna todas."),
     db: Session = Depends(get_db),
 ):
     subq = (
         db.query(
             WeatherReading.city,
+            WeatherReading.source,
             func.max(WeatherReading.fetched_at).label("max_fetched_at"),
         )
-        .group_by(WeatherReading.city)
+        .group_by(WeatherReading.city, WeatherReading.source)
         .subquery()
     )
 
     query = db.query(WeatherReading).join(
         subq,
         (WeatherReading.city == subq.c.city)
+        & (WeatherReading.source == subq.c.source)
         & (WeatherReading.fetched_at == subq.c.max_fetched_at),
     )
 
     if city:
         query = query.filter(WeatherReading.city.ilike(f"%{city}%"))
+    if source:
+        query = query.filter(WeatherReading.source.in_(source))
 
     results = query.all()
 
@@ -88,6 +96,7 @@ def stats(
     city: Optional[str] = Query(None, max_length=100, description="Nome da cidade (ex: Florianopolis)"),
     from_dt: Optional[datetime] = Query(None, description="Data/hora inicial (UTC)"),
     to_dt: Optional[datetime] = Query(None, description="Data/hora final (UTC)"),
+    source: Optional[List[str]] = Query(None, description="Fontes de dados (openweather, openmeteo). Sem filtro retorna todas."),
     db: Session = Depends(get_db),
 ):
     if from_dt and to_dt and from_dt > to_dt:
@@ -110,6 +119,8 @@ def stats(
         query = query.filter(WeatherReading.fetched_at >= from_dt)
     if to_dt:
         query = query.filter(WeatherReading.fetched_at <= to_dt)
+    if source:
+        query = query.filter(WeatherReading.source.in_(source))
 
     rows = query.all()
 
