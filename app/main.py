@@ -6,6 +6,7 @@ from fastapi import FastAPI
 
 from app.config import settings
 from app.routers.readings import router as readings_router
+from app.routers.sources import router as sources_router
 from app.services.fetcher import fetch_all_cities
 from app.services.openmeteo import fetch_all_openmeteo
 
@@ -56,6 +57,7 @@ def create_app() -> FastAPI:
 app = create_app()
 
 app.include_router(readings_router)
+app.include_router(sources_router)
 
 
 @app.get("/health", tags=["health"], summary="Healthcheck do serviço")

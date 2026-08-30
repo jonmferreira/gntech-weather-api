@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Optional
 from pydantic import BaseModel, Field
 
 
@@ -22,6 +23,14 @@ class WeatherReadingOut(BaseModel):
     source: str = Field(..., description="Fonte dos dados: openweather | openmeteo")
 
     model_config = {"from_attributes": True}
+
+
+class SourceStatusOut(BaseModel):
+    source: str = Field(..., description="Nome da fonte de dados")
+    is_healthy: bool = Field(..., description="True se a última coleta foi bem-sucedida")
+    last_attempt: Optional[datetime] = Field(None, description="Última tentativa de coleta (UTC)")
+    last_success: Optional[datetime] = Field(None, description="Última coleta bem-sucedida (UTC)")
+    last_error: Optional[str] = Field(None, description="Mensagem do último erro, se houver")
 
 
 class CityStatsOut(BaseModel):

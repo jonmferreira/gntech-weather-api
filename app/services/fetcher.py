@@ -6,6 +6,7 @@ import httpx
 from app.config import settings
 from app.db import SessionLocal
 from app.models import WeatherReading
+from app.services import source_status
 
 logger = logging.getLogger(__name__)
 
@@ -24,24 +25,34 @@ def _fetch_city(city_country: str) -> None:
     try:
         response = httpx.get(_BASE_URL, params=params, timeout=10)
     except httpx.TimeoutException:
-        logger.error("OpenWeather: timeout ao buscar '%s'.", city)
+        msg = f"timeout ao buscar '{city}'"
+        logger.error("OpenWeather: %s.", msg)
+        source_status.mark_failure("openweather", msg)
         return
 
     if response.status_code == 429:
-        logger.warning("OpenWeather: rate limit excedido — ciclo ignorado.")
+        msg = "rate limit excedido — ciclo ignorado"
+        logger.warning("OpenWeather: %s.", msg)
+        source_status.mark_failure("openweather", msg)
         return
     if response.status_code == 401:
-        logger.error("OpenWeather: chave de API inválida ou ainda não ativada.")
+        msg = "chave de API invalida ou ainda nao ativada"
+        logger.error("OpenWeather: %s.", msg)
+        source_status.mark_failure("openweather", msg)
         return
     if response.status_code == 404:
-        logger.warning("OpenWeather: cidade '%s' não encontrada.", city)
+        msg = f"cidade '{city}' nao encontrada"
+        logger.warning("OpenWeather: %s.", msg)
+        source_status.mark_failure("openweather", msg)
         return
 
     try:
         response.raise_for_status()
         data = response.json()
     except httpx.HTTPStatusError as exc:
-        logger.error("OpenWeather: erro %s para '%s'.", exc.response.status_code, city)
+        msg = f"erro HTTP {exc.response.status_code}"
+        logger.error("OpenWeather: %s para '%s'.", msg, city)
+        source_status.mark_failure("openweather", msg)
         return
 
     reading = WeatherReading(
@@ -67,6 +78,7 @@ def _fetch_city(city_country: str) -> None:
     try:
         db.add(reading)
         db.commit()
+        source_status.mark_success("openweather")
         logger.info(
             "Leitura salva: %s/%s — %.1f°C, umidade %d%%",
             reading.city,
@@ -76,6 +88,7 @@ def _fetch_city(city_country: str) -> None:
         )
     except Exception as exc:
         db.rollback()
+        source_status.mark_failure("openweather", str(exc))
         logger.error("Erro ao salvar leitura de '%s': %s", city, exc)
     finally:
         db.close()

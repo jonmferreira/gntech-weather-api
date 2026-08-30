@@ -6,6 +6,7 @@ import httpx
 from app.config import settings
 from app.db import SessionLocal
 from app.models import WeatherReading
+from app.services import source_status
 
 logger = logging.getLogger(__name__)
 
@@ -59,10 +60,14 @@ def _fetch_coords(city_name: str, country: str, lat: float, lon: float) -> None:
         response.raise_for_status()
         data = response.json()
     except httpx.TimeoutException:
-        logger.error("Open-Meteo: timeout ao buscar '%s'.", city_name)
+        msg = f"timeout ao buscar '{city_name}'"
+        logger.error("Open-Meteo: %s.", msg)
+        source_status.mark_failure("openmeteo", msg)
         return
     except httpx.HTTPStatusError as exc:
-        logger.error("Open-Meteo: erro %s para '%s'.", exc.response.status_code, city_name)
+        msg = f"erro HTTP {exc.response.status_code}"
+        logger.error("Open-Meteo: %s para '%s'.", msg, city_name)
+        source_status.mark_failure("openmeteo", msg)
         return
 
     current = data["current"]
@@ -92,6 +97,7 @@ def _fetch_coords(city_name: str, country: str, lat: float, lon: float) -> None:
     try:
         db.add(reading)
         db.commit()
+        source_status.mark_success("openmeteo")
         logger.info(
             "Open-Meteo — leitura salva: %s/%s — %.1f°C, umidade %d%%",
             reading.city,
@@ -101,6 +107,7 @@ def _fetch_coords(city_name: str, country: str, lat: float, lon: float) -> None:
         )
     except Exception as exc:
         db.rollback()
+        source_status.mark_failure("openmeteo", str(exc))
         logger.error("Erro ao salvar leitura Open-Meteo de '%s': %s", city_name, exc)
     finally:
         db.close()
