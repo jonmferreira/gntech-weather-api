@@ -7,8 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.db import get_db
 from app.models import WeatherReading
-from app.schemas import CityStatsOut, SourceReadingOut, WeatherReadingOut
-from app.services import source_status as ss
+from app.schemas import CityStatsOut, WeatherReadingOut
 
 router = APIRouter(prefix="/readings", tags=["readings"])
 
@@ -46,40 +45,42 @@ def list_readings(
 
 @router.get(
     "/latest",
-    response_model=list[SourceReadingOut],
-    summary="Última leitura por fonte de dados",
+    response_model=list[WeatherReadingOut],
+    summary="Última leitura por fonte",
     description=(
-        "Retorna a leitura mais recente de cada fonte de dados integrada. "
-        "Para cada fonte informa se está saudável e o último erro, caso tenha falhado. "
-        "Fontes com falha aparecem com `data: null` e `error` preenchido — "
-        "as fontes que funcionaram retornam os dados normalmente."
+        "Retorna a leitura mais recente de cada fonte integrada. "
+        "O campo `source` identifica a origem do dado. "
+        "Para verificar a saúde de cada fonte use `GET /sources/status`."
     ),
 )
 def latest_readings(
     city: Optional[str] = Query(None, max_length=100, description="Nome da cidade (ex: Florianopolis)"),
     db: Session = Depends(get_db),
 ):
-    statuses = {s.source: s for s in ss.get_all()}
-
-    result = []
-    for source_name, status in statuses.items():
-        query = db.query(WeatherReading).filter(WeatherReading.source == source_name)
-        if city:
-            query = query.filter(WeatherReading.city.ilike(f"%{city}%"))
-
-        latest = query.order_by(WeatherReading.fetched_at.desc()).first()
-
-        result.append(
-            SourceReadingOut(
-                source=source_name,
-                is_healthy=status.is_healthy,
-                last_success=status.last_success,
-                error=status.last_error,
-                data=WeatherReadingOut.model_validate(latest) if latest else None,
-            )
+    subq = (
+        db.query(
+            WeatherReading.source,
+            func.max(WeatherReading.fetched_at).label("max_fetched_at"),
         )
+        .group_by(WeatherReading.source)
+        .subquery()
+    )
 
-    return result
+    query = db.query(WeatherReading).join(
+        subq,
+        (WeatherReading.source == subq.c.source)
+        & (WeatherReading.fetched_at == subq.c.max_fetched_at),
+    )
+
+    if city:
+        query = query.filter(WeatherReading.city.ilike(f"%{city}%"))
+
+    results = query.all()
+
+    if not results:
+        raise HTTPException(status_code=404, detail="Nenhuma leitura encontrada.")
+
+    return results
 
 
 @router.get(
