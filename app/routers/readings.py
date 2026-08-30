@@ -17,7 +17,7 @@ router = APIRouter(prefix="/readings", tags=["readings"])
     "",
     response_model=list[WeatherReadingOut],
     summary="Lista leituras climáticas",
-    description="Retorna leituras armazenadas com filtros opcionais por cidade e período.",
+    description="Retorna leituras armazenadas com filtros opcionais por cidade, período e fonte.",
 )
 def list_readings(
     city: Optional[str] = Query(None, max_length=100, description="Nome da cidade (ex: Florianopolis)"),
@@ -46,58 +46,16 @@ def list_readings(
 
 @router.get(
     "/latest",
-    response_model=list[WeatherReadingOut],
-    summary="Última leitura por cidade",
-    description="Retorna a leitura mais recente de cada cidade monitorada. "
-                "Se `city` for informado, filtra para aquela cidade.",
-)
-def latest_readings(
-    city: Optional[str] = Query(None, max_length=100, description="Nome da cidade (ex: Florianopolis)"),
-    source: Optional[List[str]] = Query(None, description="Fontes de dados (openweather, openmeteo). Sem filtro retorna todas."),
-    db: Session = Depends(get_db),
-):
-    subq = (
-        db.query(
-            WeatherReading.city,
-            WeatherReading.source,
-            func.max(WeatherReading.fetched_at).label("max_fetched_at"),
-        )
-        .group_by(WeatherReading.city, WeatherReading.source)
-        .subquery()
-    )
-
-    query = db.query(WeatherReading).join(
-        subq,
-        (WeatherReading.city == subq.c.city)
-        & (WeatherReading.source == subq.c.source)
-        & (WeatherReading.fetched_at == subq.c.max_fetched_at),
-    )
-
-    if city:
-        query = query.filter(WeatherReading.city.ilike(f"%{city}%"))
-    if source:
-        query = query.filter(WeatherReading.source.in_(source))
-
-    results = query.all()
-
-    if not results:
-        raise HTTPException(status_code=404, detail="Nenhuma leitura encontrada.")
-
-    return results
-
-
-@router.get(
-    "/by-source",
     response_model=list[SourceReadingOut],
-    summary="Última leitura de cada fonte com status",
+    summary="Última leitura por fonte de dados",
     description=(
-        "Retorna a leitura mais recente agrupada por fonte de dados. "
-        "Para cada fonte informa se está saudável, quando foi a última coleta bem-sucedida "
-        "e o erro mais recente caso tenha falhado. "
-        "Fontes com falha aparecem com `data: null` e `error` preenchido."
+        "Retorna a leitura mais recente de cada fonte de dados integrada. "
+        "Para cada fonte informa se está saudável e o último erro, caso tenha falhado. "
+        "Fontes com falha aparecem com `data: null` e `error` preenchido — "
+        "as fontes que funcionaram retornam os dados normalmente."
     ),
 )
-def readings_by_source(
+def latest_readings(
     city: Optional[str] = Query(None, max_length=100, description="Nome da cidade (ex: Florianopolis)"),
     db: Session = Depends(get_db),
 ):
@@ -105,10 +63,7 @@ def readings_by_source(
 
     result = []
     for source_name, status in statuses.items():
-        query = (
-            db.query(WeatherReading)
-            .filter(WeatherReading.source == source_name)
-        )
+        query = db.query(WeatherReading).filter(WeatherReading.source == source_name)
         if city:
             query = query.filter(WeatherReading.city.ilike(f"%{city}%"))
 
@@ -132,7 +87,7 @@ def readings_by_source(
     response_model=list[CityStatsOut],
     summary="Estatísticas por cidade",
     description="Retorna média, máxima e mínima de temperatura, umidade e vento "
-                "agrupadas por cidade. Suporta filtro por período.",
+                "agrupadas por cidade. Suporta filtro por período e fonte.",
 )
 def stats(
     city: Optional[str] = Query(None, max_length=100, description="Nome da cidade (ex: Florianopolis)"),
