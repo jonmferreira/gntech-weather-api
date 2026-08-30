@@ -1,15 +1,14 @@
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime, timezone
-from typing import Optional
 
 
 @dataclass
 class SourceStatus:
     source: str
     is_healthy: bool = False
-    last_attempt: Optional[datetime] = None
-    last_success: Optional[datetime] = None
-    last_error: Optional[str] = None
+    last_attempt: datetime | None = None
+    last_success: datetime | None = None
+    last_error: str | None = None
 
 
 _registry: dict[str, SourceStatus] = {

@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional
+
 from pydantic import BaseModel, Field
 
 
@@ -28,17 +28,17 @@ class WeatherReadingOut(BaseModel):
 class SourceStatusOut(BaseModel):
     source: str = Field(..., description="Nome da fonte de dados")
     is_healthy: bool = Field(..., description="True se a última coleta foi bem-sucedida")
-    last_attempt: Optional[datetime] = Field(None, description="Última tentativa de coleta (UTC)")
-    last_success: Optional[datetime] = Field(None, description="Última coleta bem-sucedida (UTC)")
-    last_error: Optional[str] = Field(None, description="Mensagem do último erro, se houver")
+    last_attempt: datetime | None = Field(None, description="Última tentativa de coleta (UTC)")
+    last_success: datetime | None = Field(None, description="Última coleta bem-sucedida (UTC)")
+    last_error: str | None = Field(None, description="Mensagem do último erro, se houver")
 
 
 class SourceReadingOut(BaseModel):
     source: str = Field(..., description="Nome da fonte de dados")
     is_healthy: bool = Field(..., description="True se a última coleta foi bem-sucedida")
-    last_success: Optional[datetime] = Field(None, description="Última coleta bem-sucedida (UTC)")
-    error: Optional[str] = Field(None, description="Mensagem de erro da última tentativa, se houver")
-    data: Optional[WeatherReadingOut] = Field(None, description="Última leitura disponível, null se nunca houve coleta bem-sucedida")
+    last_success: datetime | None = Field(None, description="Última coleta bem-sucedida (UTC)")
+    error: str | None = Field(None, description="Mensagem de erro da última tentativa, se houver")
+    data: WeatherReadingOut | None = Field(None, description="Última leitura disponível, null se nunca houve coleta bem-sucedida")
 
 
 class CityStatsOut(BaseModel):
